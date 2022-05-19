@@ -8,6 +8,7 @@ Packettower will also attempt to write data to a `.pcap` file (./data.pcap)
 """
 
 import codecs
+import datetime
 import os
 import pyshark
 import sys
@@ -28,26 +29,42 @@ def listen(interface):
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
 
-            print("-----------------------")
-            print(f"from: {packet.ip.src} -> to: {packet.ip.dst} ({packet.highest_layer} packet)")
             try:
-                payload = packet.tcp.payload
-                print(f"*payload*")
+                # get packet payload, if it exists
+                payload = None
+                src = packet.ip.src
+                dst = packet.ip.dst
+                packet_type = "tcp"
+                if(hasattr(packet, "udp")):
+                    payload = packet.udp.payload
+                    # get port information
+                    src += ":" + packet.udp.port[0]
+                    dst += ":" + packet.udp.port[1]
+                    packet_type = "udp"
+                else: # not udp, likely tcp
+                    payload = packet.tcp.payload
+                    # get port information
+                    src += ":" + packet.tcp.port[0]
+                    dst += ":" + packet.tcp.port[1]
+
+                print(f"\n{packet.sniff_time.isoformat()} - {packet_type} packet from: {src} -> to: {dst} ({packet.highest_layer} packet)")
+                print(f"[info] payload detected")
                 print(f"(raw):\n{payload}")
 
                 raw_payload = payload.replace(':', '') # place all hex values consecutively
                 decoded_payload = codecs.decode(raw_payload, "hex")
                 print(f"(decoded):\n{str(decoded_payload, 'utf-8')}")
+                print("-----------------------")
             except AttributeError:
-                print("[info] packet has no data")
+                # print("[info] packet has no data")
+                continue
             except UnicodeDecodeError:
                 print("[info] failed to decode payload, try using CyberChef?")
+                print("-----------------------")
+                continue
             except Exception as e:
                 print(f"[err] General execption thrown:")
                 traceback.print_exc()
-            finally:
-                with open("./data.pcap", "ab+") as pcap_file:
-                    pcap_file.write(packet.get_raw_packet())
 
 if __name__ == "__main__":
     if(len(sys.argv) < 2):
