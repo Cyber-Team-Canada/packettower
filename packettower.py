@@ -27,7 +27,7 @@ def listen(interface):
                 continue
 
             print("-----------------------")
-            print(f"from: {packet.ip.src} -> to: {packet.ip.dst}")
+            print(f"from: {packet.ip.src} -> to: {packet.ip.dst} ({packet.highest_layer} packet)")
             try:
                 print(f"payload:\n{packet.tcp.payload}")
             except AttributeError:
