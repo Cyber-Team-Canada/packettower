@@ -8,20 +8,33 @@ Packettower will also attempt to write data to a `.pcap` file (./data.pcap)
 """
 
 import codecs
-import datetime
+from datetime import datetime
+from hashlib import sha256
 import os
 import pyshark
+import random
+import shutil
+import subprocess as subp
 import sys
 import traceback
 
-DUMPPATH = "./data.pcap"
+pcap_file_base = "./test_dumps/dump"
+# randomly generate a tmp file for this process to use
+TEMPPATH = f"/tmp/{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdigest()}.pcap"
 
-def listen(interface):
+# keep tcpdump process as a global process to easily kill it
+tcpdump_p = None
+
+def listen(interface, pcap_file_base=None):
+    global tcpdump_p
 
     print(f"[info] capturing on interface {interface}")
     print("[note] to exit, send two SIGINTs")
 
     capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
+
+    # start tcp_dump process
+    tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"])
 
     while(True):
         for packet in capture.sniff_continuously(packet_count=25):
@@ -62,9 +75,12 @@ def listen(interface):
                 print("[info] failed to decode payload, try using CyberChef?")
                 print("-----------------------")
                 continue
-            except Exception as e:
-                print(f"[err] General execption thrown:")
-                traceback.print_exc()
+
+        # close and restart tcpdump process to write pcap file
+        tcpdump_p.terminate()
+        # move generated pcap file to desired location
+        shutil.copy(TEMPPATH, pcap_file_base+"-"+datetime.now().strftime("%H-%M-%S-%sss")+".pcap")
+        tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"])
 
 if __name__ == "__main__":
     if(len(sys.argv) < 2):
@@ -99,3 +115,12 @@ if __name__ == "__main__":
 
     listen(sys.argv[1])
 
+
+    try:
+        listen(sys.argv[1])
+    except Exception as e:
+        print(f"[err] General execption thrown:")
+        traceback.print_exc()
+        # cleanup
+        tcpdump_p.terminate()
+        os.remove(TEMPPATH)
