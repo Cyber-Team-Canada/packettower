@@ -7,9 +7,11 @@ display payloads of any incoming and outgoing traffic
 Packettower will also attempt to write data to a `.pcap` file (./data.pcap)
 """
 
+import codecs
 import os
 import pyshark
 import sys
+import traceback
 
 DUMPPATH = "./data.pcap"
 
@@ -29,13 +31,20 @@ def listen(interface):
             print("-----------------------")
             print(f"from: {packet.ip.src} -> to: {packet.ip.dst} ({packet.highest_layer} packet)")
             try:
-                print(f"payload:\n{packet.tcp.payload}")
+                payload = packet.tcp.payload
+                print(f"*payload*")
+                print(f"(raw):\n{payload}")
+
+                raw_payload = payload.replace(':', '') # place all hex values consecutively
+                decoded_payload = codecs.decode(raw_payload, "hex")
+                print(f"(decoded):\n{str(decoded_payload, 'utf-8')}")
             except AttributeError:
                 print("[info] packet has no data")
-                continue
+            except UnicodeDecodeError:
+                print("[info] failed to decode payload, try using CyberChef?")
             except Exception as e:
                 print(f"[err] General execption thrown:")
-                print(e)
+                traceback.print_exc()
             finally:
                 with open("./data.pcap", "ab+") as pcap_file:
                     pcap_file.write(packet.get_raw_packet())
