@@ -24,8 +24,8 @@ def listen(interface):
 
     while(True):
         for packet in capture.sniff_continuously(packet_count=25):
-            # ignore ARP packets
-            if(packet.highest_layer == "ARP_RAW"):
+            # ignore ARP packets and DHCP packets
+            if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
 
             print("-----------------------")
