@@ -88,7 +88,7 @@ def print_help():
     print("optional args:")
     print("| -o /path/to/dump/folder - write to the location to write files\n" \
           "|    note: this will generate a file called packettower_dump-%H-%M-%S-%s.pcap" \
-          "if not specified, no pcap file will be generated.\n" \
+          " if not specified, no pcap file will be generated.\n" \
           "| -h - displays this help menu")
 
 if __name__ == "__main__":
