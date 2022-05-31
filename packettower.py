@@ -38,44 +38,35 @@ def listen(interface, pcap_file_base=None):
         tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"], stdout=nullfd, stderr=nullfd)
 
     while(True):
-        for packet in capture.sniff_continuously(packet_count=25):
+        for packet in capture.sniff_continuously(packet_count=100):
             # ignore ARP packets and DHCP packets
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
 
+            # get information about a given packet
             try:
                 # get packet payload, if it exists
                 payload = None
-                src = packet.ip.src
-                dst = packet.ip.dst
+                src_addr = packet.ip.addr[0]
+                dst_addr = packet.ip.addr[1]
+                src_port = None
+                dst_port = None
                 packet_type = "tcp"
                 if(hasattr(packet, "udp")):
                     payload = packet.udp.payload
                     # get port information
-                    src += ":" + packet.udp.port[0]
-                    dst += ":" + packet.udp.port[1]
+                    src_port = packet.udp.port[0]
+                    dst_port = packet.udp.port[1]
                     packet_type = "udp"
                 else: # not udp, likely tcp
                     payload = packet.tcp.payload
                     # get port information
-                    src += ":" + packet.tcp.port[0]
-                    dst += ":" + packet.tcp.port[1]
-
-                # print(f"\n{packet.sniff_time.isoformat()} - {packet_type} packet from: {src} -> to: {dst} ({packet.highest_layer} packet)")
-                # print(f"[info] payload detected")
-                # print(f"(raw):\n{payload}")
-
-                # place all hex values consecutively
-                # raw_payload = payload.replace(':', '')
-                # decoded_payload = codecs.decode(raw_payload, "hex")
-                # print(f"(decoded):\n{str(decoded_payload, 'utf-8')}")
-                # print("-----------------------")
+                    src_port = packet.tcp.port[0]
+                    dst_port = packet.tcp.port[1]
             except AttributeError:
-                # print("[info] packet has no data")
                 continue
+            # attempt to decode payload if possible
             except UnicodeDecodeError:
-                # print("[info] failed to decode payload, try using CyberChef?")
-                # print("-----------------------")
                 continue
 
         if(pcap_file_base != None):
