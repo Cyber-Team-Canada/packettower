@@ -25,9 +25,17 @@ TEMPPATH = f"./.{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdige
 tcpdump_p = None
 nullfd = open(os.devnull, "w")
 
-def listen(interface, service_port, pcap_file_base="."):
+def listen(interface, service_port, **kwargs):
+    """
+    pcap_path = "."
     port_listen = False
-    global tcpdump_p
+    """
+    # handle arguments
+    pcap_file_base = "."
+    if("pcap_path" in kwargs.keys()) pcap_file_base = kwargs["pcap_path"]
+    port_listen = False
+    if("port_listen" in kwargs.keys()): port_listen = kwargs["port_listen"]
+
     # mapping: port number : (filename, tcpdump_process)
     port_pcap_map = {}
 
@@ -64,7 +72,7 @@ def listen(interface, service_port, pcap_file_base="."):
                     # get port information
                     src_port = packet.tcp.port[0]
                     dst_port = packet.tcp.port[1]
-            except AttributeError:
+            except AttributeError as e:
                 continue
 
             # if it's a new port making a request, start listening to it with a
