@@ -23,6 +23,7 @@ TEMPPATH = f"/tmp/{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdi
 
 # keep tcpdump process as a global process to easily kill it
 tcpdump_p = None
+nullfd = open(os.devnull, "w")
 
 def listen(interface, pcap_file_base=None):
     global tcpdump_p
@@ -34,7 +35,7 @@ def listen(interface, pcap_file_base=None):
 
     # start tcp_dump process if output path is specified
     if(pcap_file_base != None):
-        tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"])
+        tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"], stdout=nullfd, stderr=nullfd)
 
     while(True):
         for packet in capture.sniff_continuously(packet_count=25):
@@ -81,7 +82,7 @@ def listen(interface, pcap_file_base=None):
             tcpdump_p.terminate()
             # move generated pcap file to desired location
             shutil.copy(TEMPPATH, pcap_file_base+"/packettower_dump-"+datetime.now().strftime("%H-%M-%S-%s")+".pcap")
-            tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"])
+            tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"], stdout=nullfd, stderr=nullfd)
 
 def print_help():
     print(f"Usage: {sys.argv[0]} <interface> [options]")
@@ -119,3 +120,4 @@ if __name__ == "__main__":
         if(pcap_file_base != None):
             tcpdump_p.terminate()
             os.remove(TEMPPATH)
+        nullfd.close()
