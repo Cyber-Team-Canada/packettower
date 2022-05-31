@@ -65,7 +65,8 @@ def listen(interface, pcap_file_base=None):
                 print(f"[info] payload detected")
                 print(f"(raw):\n{payload}")
 
-                raw_payload = payload.replace(':', '') # place all hex values consecutively
+                # place all hex values consecutively
+                raw_payload = payload.replace(':', '')
                 decoded_payload = codecs.decode(raw_payload, "hex")
                 print(f"(decoded):\n{str(decoded_payload, 'utf-8')}")
                 print("-----------------------")
@@ -81,8 +82,16 @@ def listen(interface, pcap_file_base=None):
             # close and restart tcpdump process to write pcap file
             tcpdump_p.terminate()
             # move generated pcap file to desired location
-            shutil.copy(TEMPPATH, pcap_file_base+"/packettower_dump-"+datetime.now().strftime("%H-%M-%S-%s")+".pcap")
-            tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"], stdout=nullfd, stderr=nullfd)
+            shutil.copy(TEMPPATH, pcap_file_base+"/packettower_dump-"
+                    + datetime.now().strftime("%H-%M-%S-%s")+".pcap")
+            tcpdump_p = subp.Popen(["tcpdump",
+                "-i",
+                interface,
+                "-w",
+                TEMPPATH,
+                "-U"],
+                stdout=nullfd,
+                stderr=nullfd)
 
 def print_help():
     print(f"Usage: {sys.argv[0]} <interface> [options]")
