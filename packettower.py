@@ -28,9 +28,24 @@ nullfd = open(os.devnull, "w")
 
 def listen(interface, service_port, **kwargs):
     """
-    pcap_path = "."
-    port_listen = False
-    flag_pattern = None
+    required args:
+    | interface - the network interface to listen for traffic from
+    | service_port - the port a service is running on
+    |    traffic to and from this port will be recorded
+    optional args:
+    | pcap_file_base ( = ".") - write to the location to write pcap files
+    |    note: will create files in the form "packettower_port-<port>_<attacker
+    |    info>.pcap" within the specified folder
+    |    if not specified, will write to working directory
+    | port_listen ( = False) - differentiate traffic by host address and port number
+    |    note: only useful depending on the infrastructure of the CTF. for
+    |    example, if all attackers are passing through a router with a NAT table,
+    |    then using `--port_listen` would be beneficial.
+    | flag_pattern ( = None) - attempt to read packet payloads for outgoing flags
+    |                          that match the regex pattern.
+    |    note: most commonly, this argument will be in the form of `FLAG{.*}` and
+    |    is dependent on the CTF
+    |    eg: for SaarCTF, `SAAR{.*}`
     """
     print(f"[info] capturing on interface {interface} for port {service_port}")
 
@@ -127,11 +142,23 @@ def listen(interface, service_port, **kwargs):
 def print_help():
     print(f"Usage: {sys.argv[0]} <interface> <port> [options]")
     print("Packettower will generate .pcap files for a given service hosted at" \
-          "a specific port")
+          "a specific port from a specified network interface\n")
+    print("required args:")
+    print("| interface - the network interface to listen for traffic from\n" \
+          "| port - the port a service is running on\n" \
+          "|    traffic to and from this port will be recorded")
     print("optional args:")
-    print("| -o /path/to/dump/folder - write to the location to write files\n" \
-          "|    note: this will generate a file called packettower_dump-%H-%M-%S-%s.pcap" \
-          " if not specified, no pcap file will be generated.\n" \
+    print("| -o /path/to/dump/folder - write to the location to write pcap files\n" \
+          "|    note: will create files in the form \"packettower_port-<port>_<attacker info>.pcap\"" \
+          " within the specified folder. if not specified, will write to working directory\n" \
+          "| --port_listen - differentiate traffic by host address and port number\n" \
+          "|    note: only useful depending on the infrastructure of the CTF." \
+          " for example, if all attackers are passing through a router with a NAT table, then" \
+          " using `--port_listen` would be beneficial.\n" \
+          "| --flag_pattern <flag pattern in regex> - attempt to read packet payloads for outgoing" \
+          " flags that match the regex pattern.\n" \
+          "|    note: most commonly, this argument will be in the form of `FLAG{.*}` and is dependent on the CTF\n" \
+          "|    eg: for SaarCTF, `SAAR{.*}`\n" \
           "| -h - displays this help menu")
 
 if __name__ == "__main__":
