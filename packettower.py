@@ -51,7 +51,6 @@ def listen(interface, pcap_file_base=None):
                 dst_addr = packet.ip.addr[1]
                 src_port = None
                 dst_port = None
-                packet_type = "tcp"
                 if(hasattr(packet, "udp")):
                     payload = packet.udp.payload
                     # get port information
@@ -65,7 +64,10 @@ def listen(interface, pcap_file_base=None):
                     dst_port = packet.tcp.port[1]
             except AttributeError:
                 continue
-            # attempt to decode payload if possible
+            # attempt to decode payload if it exists
+            try:
+                raw_payload = payload.replace(':', '')
+                decoded_payload = str(codecs.decode(raw_payload, "hex"), "utf-8")
             except UnicodeDecodeError:
                 continue
 
