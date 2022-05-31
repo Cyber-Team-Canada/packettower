@@ -25,8 +25,10 @@ TEMPPATH = f"./.{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdige
 tcpdump_p = None
 nullfd = open(os.devnull, "w")
 
-def listen(interface, pcap_file_base=None):
+def listen(interface, service_port, pcap_file_base=None):
     global tcpdump_p
+    # mapping: port number : (filename, tcpdump_process)
+    port_pcap_map = {}
 
     print(f"[info] capturing on interface {interface}")
     print("[note] to exit, send two SIGINTs")
@@ -52,12 +54,16 @@ def listen(interface, pcap_file_base=None):
                 src_port = None
                 dst_port = None
                 if(hasattr(packet, "udp")):
+                    # not for the correct service, continue
+                    if(service_port not in packet.udp.port): continue
                     payload = packet.udp.payload
                     # get port information
                     src_port = packet.udp.port[0]
                     dst_port = packet.udp.port[1]
                     packet_type = "udp"
                 else: # not udp, likely tcp
+                    # not for the correct service, continue
+                    if(service_port not in packet.tcp.port): continue
                     payload = packet.tcp.payload
                     # get port information
                     src_port = packet.tcp.port[0]
