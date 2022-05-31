@@ -166,6 +166,10 @@ if __name__ == "__main__":
         print_help()
         exit(1)
 
+    if(shutil.which("tcpdump") == None or shutil.which("tshark") == None):
+        print("[err] packettower requires `tcpdump` and `tshark` to run. please install them")
+        exit(1)
+
     # parse arguments
     interface = None
     port = None
