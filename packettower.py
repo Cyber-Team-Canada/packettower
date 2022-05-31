@@ -25,23 +25,18 @@ TEMPPATH = f"./.{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdige
 tcpdump_p = None
 nullfd = open(os.devnull, "w")
 
-def listen(interface, service_port, pcap_file_base=None):
+def listen(interface, service_port, pcap_file_base="."):
     port_listen = False
     global tcpdump_p
     # mapping: port number : (filename, tcpdump_process)
     port_pcap_map = {}
 
-    print(f"[info] capturing on interface {interface}")
-    print("[note] to exit, send two SIGINTs")
+    print(f"[info] capturing on interface {interface} for port {service_port}")
 
     capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
 
-    # start tcp_dump process if output path is specified
-    if(pcap_file_base != None):
-        tcpdump_p = subp.Popen(["tcpdump", "-i", interface, "-w", TEMPPATH, "-U"], stdout=nullfd, stderr=nullfd)
-
     while(True):
-        for packet in capture.sniff_continuously(packet_count=100):
+        for packet in capture.sniff_continuously(packet_count=5):
             # ignore ARP packets and DHCP packets
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
@@ -85,34 +80,23 @@ def listen(interface, service_port, pcap_file_base=None):
             if(attacker_port not in port_pcap_map.keys()):
                 pcap_path = f"{pcap_file_base}/packettower_port-{service_port}_{attacker_addr}"
                 if(port_listen): pcap_path += f"-{attacker_port}"
+                pcap_path += ".pcap"
 
                 # filter for only this service
                 tcpdump_expr = f"port {service_port} and host {attacker_addr}"
-                if(port_listen) tcpdump_expr += f" and port {attacker_port}"
+                if(port_listen): tcpdump_expr += f" and port {attacker_port}"
 
                 tcpdump_proc = subp.Popen(["tcpdump", "-i", interface, "-w", pcap_path, "-U"] + tcpdump_expr.split())
                 port_pcap_map[attacker_port] = (pcap_path, tcpdump_proc)
+
+                print(f"[info] found new potential attacker: {attacker_addr}:{attacker_port}, " \
+                      f"generating new pcap file {pcap_path}")
             # attempt to decode payload if it exists
             try:
                 raw_payload = payload.replace(':', '')
                 decoded_payload = str(codecs.decode(raw_payload, "hex"), "utf-8")
             except UnicodeDecodeError:
                 continue
-
-        if(pcap_file_base != None):
-            # close and restart tcpdump process to write pcap file
-            tcpdump_p.terminate()
-            # move generated pcap file to desired location
-            shutil.copy(TEMPPATH, pcap_file_base+"/packettower_dump-"
-                    + datetime.now().strftime("%H-%M-%S-%s")+".pcap")
-            tcpdump_p = subp.Popen(["tcpdump",
-                "-i",
-                interface,
-                "-w",
-                TEMPPATH,
-                "-U"],
-                stdout=nullfd,
-                stderr=nullfd)
 
 def print_help():
     print(f"Usage: {sys.argv[0]} <interface> <port> [options]")
@@ -135,6 +119,7 @@ if __name__ == "__main__":
     pcap_file_base = None
 
     for index, arg in enumerate(sys.argv):
+        if(index == 0): continue # ignore call
         if(arg[0] != '-' and interface == None):
             interface = arg
             continue
@@ -149,7 +134,7 @@ if __name__ == "__main__":
             exit(0)
 
     try:
-        listen(sys.argv[1], port, pcap_file_base)
+        listen(interface, port, pcap_file_base)
     except Exception as e:
         print(f"[err] General execption thrown:")
         traceback.print_exc()
