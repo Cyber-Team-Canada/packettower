@@ -29,12 +29,15 @@ def listen(interface, service_port, **kwargs):
     """
     pcap_path = "."
     port_listen = False
+    flag_pattern = None
     """
     # handle arguments
     pcap_file_base = "."
-    if("pcap_path" in kwargs.keys()) pcap_file_base = kwargs["pcap_path"]
+    if("pcap_path" in kwargs.keys()): pcap_file_base = kwargs["pcap_path"]
     port_listen = False
     if("port_listen" in kwargs.keys()): port_listen = kwargs["port_listen"]
+    flag_pattern = None
+    if("flag_pattern" in kwargs.keys()): flag_regex = kwargs["flag_pattern"]
 
     # mapping: port number : (filename, tcpdump_process)
     port_pcap_map = {}
@@ -85,7 +88,10 @@ def listen(interface, service_port, **kwargs):
                 attacker_port = dst_port
                 attacker_addr = dst_addr
 
-            if(attacker_port not in port_pcap_map.keys()):
+            attacker_key = attacker_addr
+            if(port_listen): attacker_key += attacker_port
+
+            if(attacker_key not in port_pcap_map.keys()):
                 pcap_path = f"{pcap_file_base}/packettower_port-{service_port}_{attacker_addr}"
                 if(port_listen): pcap_path += f"-{attacker_port}"
                 pcap_path += ".pcap"
@@ -95,10 +101,11 @@ def listen(interface, service_port, **kwargs):
                 if(port_listen): tcpdump_expr += f" and port {attacker_port}"
 
                 tcpdump_proc = subp.Popen(["tcpdump", "-i", interface, "-w", pcap_path, "-U"] + tcpdump_expr.split())
-                port_pcap_map[attacker_port] = (pcap_path, tcpdump_proc)
+                port_pcap_map[attacker_key] = (pcap_path, tcpdump_proc)
 
                 print(f"[info] found new potential attacker: {attacker_addr}:{attacker_port}, " \
                       f"generating new pcap file {pcap_path}")
+
             # attempt to decode payload if it exists
             try:
                 raw_payload = payload.replace(':', '')
@@ -125,6 +132,8 @@ if __name__ == "__main__":
     interface = None
     port = None
     pcap_file_base = None
+    port_listen = False
+    flag_pattern = None
 
     for index, arg in enumerate(sys.argv):
         if(index == 0): continue # ignore call
@@ -137,12 +146,21 @@ if __name__ == "__main__":
         if(arg == "-o"):
             pcap_file_base = sys.argv[index+1]
             continue
+        if(arg == "--port_listen"):
+            port_listen = True
+            continue
+        if(arg == "--flag_pattern"):
+            flag_pattern = sys.argv[index+1]
         if(arg == "-h"):
             print_help()
             exit(0)
 
     try:
-        listen(interface, port, pcap_file_base)
+        listen(interface, port,
+                pcap_path=pcap_file_base,
+                port_listen=port_listen,
+                flag_pattern=flag_pattern
+              )
     except Exception as e:
         print(f"[err] General execption thrown:")
         traceback.print_exc()
