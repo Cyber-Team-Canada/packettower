@@ -19,7 +19,7 @@ import sys
 import traceback
 
 # randomly generate a tmp file for this process to use
-TEMPPATH = f"/tmp/{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdigest()}.pcap"
+TEMPPATH = f"./.{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdigest()}.pcap"
 
 # keep tcpdump process as a global process to easily kill it
 tcpdump_p = None
