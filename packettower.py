@@ -13,6 +13,7 @@ from hashlib import sha256
 import os
 import pyshark
 import random
+import re
 import shutil
 import subprocess as subp
 import sys
@@ -31,23 +32,25 @@ def listen(interface, service_port, **kwargs):
     port_listen = False
     flag_pattern = None
     """
+    print(f"[info] capturing on interface {interface} for port {service_port}")
+
     # handle arguments
     pcap_file_base = "."
     if("pcap_path" in kwargs.keys()): pcap_file_base = kwargs["pcap_path"]
     port_listen = False
     if("port_listen" in kwargs.keys()): port_listen = kwargs["port_listen"]
     flag_pattern = None
-    if("flag_pattern" in kwargs.keys()): flag_regex = kwargs["flag_pattern"]
+    if("flag_pattern" in kwargs.keys()):
+        print(f"[info] using flag regex {kwargs['flag_pattern']}")
+        flag_pattern = kwargs['flag_pattern']
 
     # mapping: port number : (filename, tcpdump_process)
     port_pcap_map = {}
 
-    print(f"[info] capturing on interface {interface} for port {service_port}")
-
     capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
 
     while(True):
-        for packet in capture.sniff_continuously(packet_count=5):
+        for packet in capture.sniff_continuously(packet_count=10):
             # ignore ARP packets and DHCP packets
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
@@ -107,10 +110,18 @@ def listen(interface, service_port, **kwargs):
                       f"generating new pcap file {pcap_path}")
 
             # attempt to decode payload if it exists
+            if(flag_pattern == None):
+                continue # no point decoding if flag format is unknown
+
+            flag_regex = re.compile(flag_pattern)
             try:
                 raw_payload = payload.replace(':', '')
                 decoded_payload = str(codecs.decode(raw_payload, "hex"), "utf-8")
+                if(not flag_regex.search(decoded_payload)): continue
+                print(f"[info] ({datetime.now().strftime('%H-%M-%S-%s')}) packet " \
+                      f"payload matches flag regex - see file {port_pcap_map[attacker_key][0]}")
             except UnicodeDecodeError:
+                print("could not decode")
                 continue
 
 def print_help():
