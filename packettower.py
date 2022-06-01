@@ -65,7 +65,7 @@ def listen(interface, service_port, **kwargs):
     capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
 
     while(True):
-        for packet in capture.sniff_continuously(packet_count=10):
+        for packet in capture.sniff_continuously(packet_count=100):
             # ignore ARP packets and DHCP packets
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
                 continue
