@@ -130,7 +130,7 @@ def listen(interface, service_port, **kwargs):
                 raw_payload = payload.replace(':', '')
                 decoded_payload = str(codecs.decode(raw_payload, "hex"), "utf-8")
                 if(not flag_regex.search(decoded_payload)): continue
-                print(f"[info] ({datetime.now().strftime('%H-%M-%S-%s')}) packet " \
+                print(f"[info] ({datetime.now().strftime('%H-%M-%S')}) packet " \
                       f"payload matches flag regex - see file {port_pcap_map[attacker_key][0]}")
             except UnicodeDecodeError:
                 continue
