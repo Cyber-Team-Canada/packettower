@@ -21,13 +21,6 @@ import subprocess as subp
 import sys
 import traceback
 
-# randomly generate a tmp file for this process to use
-TEMPPATH = f"./.{sha256(str(random.randint(0,10000000)).encode('utf-8')).hexdigest()}.pcap"
-
-# keep tcpdump process as a global process to easily kill it
-tcpdump_p = None
-nullfd = open(os.devnull, "w")
-
 def listen(interface, service_port, **kwargs):
     """
     required args:
@@ -223,8 +216,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[err] General execption thrown:")
         traceback.print_exc()
-        # cleanup
-        if(pcap_file_base != None):
-            tcpdump_p.terminate()
-            os.remove(TEMPPATH)
-        nullfd.close()
