@@ -9,12 +9,14 @@ Packettower will also attempt to write data to a `.pcap` file (./data.pcap)
 
 import codecs
 from datetime import datetime
+from functools import partial
 from hashlib import sha256
 import os
 import pyshark
 import random
 import re
 import shutil
+import signal
 import subprocess as subp
 import sys
 import traceback
@@ -63,6 +65,8 @@ def listen(interface, service_port, **kwargs):
     port_pcap_map = {}
 
     capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
+
+    signal_reg(port_pcap_map)
 
     while(True):
         for packet in capture.sniff_continuously(packet_count=100):
@@ -160,6 +164,20 @@ def print_help():
           "|    note: most commonly, this argument will be in the form of `FLAG{.*}` and is dependent on the CTF\n" \
           "|    eg: for SaarCTF, `SAAR{.*}`\n" \
           "| -h - displays this help menu")
+
+def kill_children(signum, frame, port_pcap_map):
+    print("[info] interrupted by user, killing all child processes")
+    # kill all child processes
+    for index, pcap_info in enumerate(port_pcap_map.values()):
+        pcap_info[1].terminate()
+        print(f"[info] killing child {index+1}/{len(port_pcap_map.values())}", end="\r")
+    print("done, ignore future errors")
+    exit(0)
+
+def signal_reg(port_pcap_map):
+    global kill_children
+    kill_children = partial(kill_children, port_pcap_map=port_pcap_map)
+    signal.signal(signal.SIGINT, kill_children)
 
 if __name__ == "__main__":
     if(len(sys.argv) < 3):
