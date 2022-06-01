@@ -5,7 +5,8 @@ this tool will automatically filter the source of all traffic to distinguish
 different attackers
 
 _sample output_
-```
+
+```bash
 # packettower wlan0 5885 -o test_dumps --flag_pattern "FLAG{.*}"
 
 [info] capturing on interface wlan0 for port 5885
