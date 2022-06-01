@@ -140,7 +140,6 @@ def listen(interface, service_port, **kwargs):
                 print(f"[info] ({datetime.now().strftime('%H-%M-%S-%s')}) packet " \
                       f"payload matches flag regex - see file {port_pcap_map[attacker_key][0]}")
             except UnicodeDecodeError:
-                print("could not decode")
                 continue
 
 def print_help():
