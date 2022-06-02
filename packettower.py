@@ -57,11 +57,11 @@ def listen(interface, service_port, **kwargs):
     # mapping: port number : (filename, tcpdump_process)
     port_pcap_map = {}
 
-    capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
-
     signal_reg(port_pcap_map)
 
     while(True):
+        capture = pyshark.LiveCapture(interface=interface, use_json=True, include_raw=True)
+
         for packet in capture.sniff_continuously(packet_count=100):
             # ignore ARP packets and DHCP packets
             if(packet.highest_layer == "ARP_RAW" or packet.highest_layer == "DHCP_RAW"):
@@ -134,6 +134,7 @@ def listen(interface, service_port, **kwargs):
                       f"payload matches flag regex - see file {port_pcap_map[attacker_key][0]}")
             except UnicodeDecodeError:
                 continue
+        capture.close()
 
 def print_help():
     print(f"Usage: {sys.argv[0]} <interface> <port> [options]")
